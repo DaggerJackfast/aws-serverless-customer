@@ -1,0 +1,54 @@
+org: jackfast
+app: aws-node-http-api-project
+service: aws-node-http-api-project
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+        - "dynamodb:Get*"
+        - "dynamodb:Scan*"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:DeleteItem"
+      Resource: arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-customerTable-${sls:stage}
+  environment:
+    DYNAMODB_CUSTOMER_TABLE: ${self:service}-customerTable-${sls:stage}
+
+functions:
+  createCustomer:
+    handler: customer/createCustomer.createCustomer
+    events:
+      - httpApi:
+          path: /customer
+          method: post
+  getCustomer:
+    handler: customer/getCustomer.getCustomer
+    events:
+      - httpApi:
+          path: /customer
+          method: get
+  api:
+    handler: index.handler
+    events:
+      - httpApi:
+          path: /
+          method: get
+
+resources:
+  Resources:
+    CustomerTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: primary_key
+            AttributeType: S
+        BillingMode: PAY_PER_REQUEST
+        KeySchema:
+          - AttributeName: primary_key
+            KeyType: HASH
+        TableName: ${self:service}-customerTable-${sls:stage}
+
